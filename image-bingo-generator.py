@@ -12,6 +12,8 @@ from PIL import Image, ImageOps
 # ###########
 IMAGE_EXTENSIONS = [".jpeg", ".jpg", ".png"]
 TARGET_SIZE = (360, 360)
+FREE_SPACE_PATH = "FreeSpace.png"
+GRID_OVERLAY_PATH = "GridOverlay.png"
 
 # ###########
 #  Variables
@@ -72,7 +74,7 @@ def generate_cards(pNum, pImages, pCardSize):
     return cards_generated
 
 
-def merge_h(im1: Image.Image, im2: Image.Image) -> Image.Image:
+def merge_h(im1, im2):
     w = im1.size[0] + im2.size[0]
     h = max(im1.size[1], im2.size[1])
     im = Image.new("RGBA", (w, h))
@@ -83,7 +85,7 @@ def merge_h(im1: Image.Image, im2: Image.Image) -> Image.Image:
     return im
 
 
-def merge_v(im1: Image.Image, im2: Image.Image) -> Image.Image:
+def merge_v(im1, im2):
     h = im1.size[1] + im2.size[1]
     w = max(im1.size[0], im2.size[0])
     im = Image.new("RGBA", (w, h))
@@ -92,6 +94,12 @@ def merge_v(im1: Image.Image, im2: Image.Image) -> Image.Image:
     im.paste(im2, (0, im1.size[1]))
 
     return im
+
+
+def overlay(im1, im2):
+    im2_scaled = ImageOps.contain(im2, im1.size)
+    im1.paste(im2_scaled, (0, 0), im2_scaled)
+    return im1
 
 
 def make_card(pData, pUseFit, pRows, pCols, pFreeSpace):
@@ -106,17 +114,27 @@ def make_card(pData, pUseFit, pRows, pCols, pFreeSpace):
 
     if pFreeSpace:
         free_space_idx = (pRows * pCols) // 2
-        scaled_images.insert(
-            free_space_idx, Image.new("RGBA", TARGET_SIZE, color="white")
-        )
+        if os.path.exists(FREE_SPACE_PATH):
+            scaled_images.insert(free_space_idx, Image.open(FREE_SPACE_PATH))
+        else:
+            scaled_images.insert(
+                free_space_idx, Image.new("RGBA", TARGET_SIZE, color="white")
+            )
 
     index = 0
     card_image = Image.new("RGBA", (0, 0))
     for y in range(pRows):
         row = scaled_images[index]
+        if os.path.exists(GRID_OVERLAY_PATH):
+            row = overlay(row, Image.open(GRID_OVERLAY_PATH).convert("RGBA"))
         index += 1
         for x in range(pCols - 1):
-            row = merge_h(row, scaled_images[index])
+            image_to_add = scaled_images[index]
+            if os.path.exists(GRID_OVERLAY_PATH):
+                image_to_add = overlay(
+                    image_to_add, Image.open(GRID_OVERLAY_PATH).convert("RGBA")
+                )
+            row = merge_h(row, image_to_add)
             index += 1
 
         card_image = merge_v(card_image, row)
@@ -141,6 +159,17 @@ num_cards_str = input("Number of cards to generate: ")
 
 print()
 print()
+
+# Check for free space and grid overlay images
+if not os.path.exists(FREE_SPACE_PATH):
+    print("No free space image was found. Using blank square instead.")
+    print()
+
+
+if not os.path.exists(GRID_OVERLAY_PATH):
+    print("No grid overlay image was found. Ignoring.")
+    print()
+
 
 # Validate inputs
 rows = to_int(rows_str)
