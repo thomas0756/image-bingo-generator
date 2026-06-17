@@ -14,6 +14,7 @@ IMAGE_EXTENSIONS = [".jpeg", ".jpg", ".png"]
 TARGET_SIZE = (360, 360)
 FREE_SPACE_PATH = "FreeSpace.png"
 GRID_OVERLAY_PATH = "GridOverlay.png"
+OUTPUT_DIR = "Cards/"
 
 # ###########
 #  Variables
@@ -165,9 +166,15 @@ if not os.path.exists(FREE_SPACE_PATH):
     print("No free space image was found. Using blank square instead.")
     print()
 
-
 if not os.path.exists(GRID_OVERLAY_PATH):
     print("No grid overlay image was found. Ignoring.")
+    print()
+
+
+# Check output folder exists
+if not os.path.exists(OUTPUT_DIR):
+    os.mkdir(OUTPUT_DIR)
+    print("Output folder does not exist. Creating it.")
     print()
 
 
@@ -226,7 +233,7 @@ for card in cards_data:
 print("Saving card file(s)...")
 id = 1
 for card_image in cards_images:
-    card_image.save(str(id) + ".png")
+    card_image.save(OUTPUT_DIR + str(id) + ".png")
     id += 1
 
 print("Done.")
